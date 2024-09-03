@@ -1,0 +1,36 @@
+import { Button, VerticalBox, AboutSlint, HorizontalBox } from "std-widgets.slint";
+
+export component AppWindow inherits Window {
+    in-out property <bool> logged_in: false;
+    in-out property <string> uid: "";
+    in-out property <int> credits: -1;
+    in-out property <image> profile_picture: @image-url("./csh_logo_round.svg");
+    Rectangle {
+        background: black;
+        
+        if !logged_in :
+            Image {
+                height: (sin((mod(animation-tick(), 2s) / 2s) * 360deg) * 50px) + 300px;
+                source: @image-url("./csh_logo_round.svg");
+                colorize: white;
+                vertical-alignment: center;
+            }
+        if logged_in :
+            VerticalBox {
+                HorizontalBox {
+                    Image {
+                        source: profile_picture;
+                        width: 64px;
+                        height: 64px;
+                    }
+                    Text {
+                        text: uid;
+                    }
+                }
+
+                Text {
+                    text: "Drink Credits: " + credits;
+                }
+            }
+    }
+}

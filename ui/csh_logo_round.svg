@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Generator: Adobe Illustrator 13.0.2, SVG Export Plug-In  -->
+
+<svg
+   version="1.1"
+   x="0px"
+   y="0px"
+   width="800"
+   height="700"
+   viewBox="-0.014 0.028 800 700"
+   enable-background="new -0.014 0.028 540 525"
+   xml:space="preserve"
+   id="svg2"
+   sodipodi:docname="csh_logo_round.svg"
+   inkscape:version="1.3.2 (091e20ef0f, 2023-11-25, custom)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg"><sodipodi:namedview
+   id="namedview2"
+   pagecolor="#ffffff"
+   bordercolor="#000000"
+   borderopacity="0.25"
+   inkscape:showpageshadow="2"
+   inkscape:pageopacity="0.0"
+   inkscape:pagecheckerboard="0"
+   inkscape:deskcolor="#d1d1d1"
+   inkscape:zoom="0.94035119"
+   inkscape:cx="389.21629"
+   inkscape:cy="349.86929"
+   inkscape:window-width="2560"
+   inkscape:window-height="1372"
+   inkscape:window-x="1920"
+   inkscape:window-y="32"
+   inkscape:window-maximized="1"
+   inkscape:current-layer="svg2" />
+<defs
+   id="defs1">
+</defs>
+<path
+   fill-rule="evenodd"
+   clip-rule="evenodd"
+   d="m 546.2453,135.028 v -105 c 0,-16.569 -13.433,-30 -30,-30 h -360 c -16.569,0 -30,13.431 -30,30 v 465 c 0,16.567 13.431,30 30,30 h 360 c 16.567,0 30,-13.433 30,-30 v -105 h -90 v 30 c 0,8.284 -6.715,15 -15,15 h -210 c -8.284,0 -15,-6.716 -15,-15 v -315 c 0,-8.284 6.716,-15 15,-15 h 210 c 8.285,0 15,6.716 15,15 v 30 z"
+   id="path1" />
+<path
+   d="m 418.7453,120.027 h -164.999 c -4.143,0 -7.5,3.357 -7.5,7.5 v 157.501 c 0,4.143 3.357,7.499 7.5,7.499 h 101.25 c 2.071,0 3.75,1.68 3.75,3.751 v 44.999 c 0,2.071 -1.679,3.75 -3.75,3.75 h -37.501 c -2.071,0 -3.75,-1.679 -3.75,-3.75 v -18.749 h -67.499 v 75 c 0,4.142 3.357,7.5 7.5,7.5 h 164.999 c 4.143,0 7.5,-3.358 7.5,-7.5 v -157.5 c 0,-4.143 -3.357,-7.5 -7.5,-7.5 h -101.25 c -2.071,0 -3.75,-1.679 -3.75,-3.75 l -10e-4,-45 c 0,-2.071 1.679,-3.75 3.75,-3.75 h 37.501 c 2.071,0 3.75,1.679 3.75,3.75 l 0.001,18.75 h 67.499 v -75.001 c 0,-4.143 -3.357,-7.5 -7.5,-7.5 z"
+   id="path2" />
+<polygon
+   points="450,225 450,0 540,0 540,525 450,525 450,300 420,300 420,360 330,360 330,165 420,165 420,225 "
+   id="polygon2"
+   transform="translate(126.2453,0.028)" />
+<text
+   xml:space="preserve"
+   style="font-style:normal;font-variant:normal;font-weight:900;font-stretch:normal;font-size:74.6667px;font-family:'Source Han Sans';-inkscape-font-specification:'Source Han Sans, Heavy';font-variant-ligatures:discretionary-ligatures;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#a75246;stroke-width:25;stroke-linecap:round"
+   x="-3.1024351"
+   y="630.24884"
+   id="text2"><tspan
+     id="tspan2"
+     x="-3.1024351"
+     y="630.24884"
+     style="font-style:normal;font-variant:normal;font-weight:900;font-stretch:normal;font-size:74.6667px;font-family:'Source Han Sans';-inkscape-font-specification:'Source Han Sans, Heavy';font-variant-ligatures:discretionary-ligatures;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#000000;fill-opacity:1"
+     sodipodi:role="line">Please scan your ID...</tspan></text></svg>

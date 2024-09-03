@@ -31,6 +31,21 @@ pub enum AdaControllerCommand {
     Accept,
 }
 
+impl AdaControllerResponse {
+    pub fn to_credits(&self) -> u32 {
+        match self {
+            Self::Penny => 1,
+            Self::Nickel => 5,
+            Self::Dime => 10,
+            Self::Quarter => 25,
+            Self::OneDollar => 100,
+            Self::FiveDollar => 500,
+            Self::TenDollar => 1000,
+            Self::TwentyDollar => 2000
+        }
+    }
+}
+
 impl Decoder for AdaControllerCodec {
     type Item = AdaControllerResponse;
     type Error = anyhow::Error;

@@ -2,11 +2,12 @@
 name = "ada"
 version = "0.1.0"
 edition = "2021"
+build = "build.rs"
 
 [dependencies]
 anyhow = "1.0.86"
 clap = { version = "4.5.16" }
-dotenv = "0.15.0"
+dotenvy = "0.15.7"
 env_logger = "0.11.5"
 futures-util = "0.3.30"
 gatekeeper-members = "0.4.1"
@@ -19,3 +20,9 @@ strum = { version = "0.26.3", features = ["derive"] }
 tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
 tokio-serial = { version = "5.4.4", features = ["codec", "rt"] }
 tokio-util = { version = "0.7.11", features = ["codec"] }
+slint = "1.6"
+futures = { version = "0.3.30", features = ["executor"] }
+image = "0.25.2"
+
+[build-dependencies]
+slint-build = "1.6"
