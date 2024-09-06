@@ -3,34 +3,155 @@ import { Button, VerticalBox, AboutSlint, HorizontalBox } from "std-widgets.slin
 export component AppWindow inherits Window {
     in-out property <bool> logged_in: false;
     in-out property <string> uid: "";
+    in-out property <string> name: "";
     in-out property <int> credits: -1;
     in-out property <image> profile_picture: @image-url("./csh_logo_round.svg");
-    Rectangle {
-        background: black;
-        
-        if !logged_in :
-            Image {
-                height: (sin((mod(animation-tick(), 2s) / 2s) * 360deg) * 50px) + 300px;
-                source: @image-url("./csh_logo_round.svg");
-                colorize: white;
-                vertical-alignment: center;
-            }
-        if logged_in :
-            VerticalBox {
-                HorizontalBox {
-                    Image {
-                        source: profile_picture;
-                        width: 64px;
-                        height: 64px;
-                    }
-                    Text {
-                        text: uid;
-                    }
-                }
+    in-out property <int> radius;
+    out property <float> tick: mod(animation-tick(), 2s) / 2s;
+    no-frame: true;
+    default-font-family: "Source Han Sans";
+    default-font-size: 35px;
+    default-font-weight: 800;
+    width: 1920px;
+    height: 1440px;
 
-                Text {
-                    text: "Drink Credits: " + credits;
+    Rectangle {
+        background: #B0197E;
+        Image {
+            height: (self.opacity > 0 ? sin(tick * 360deg) * 50px : 0px) + 300px;
+            source: @image-url("./csh_logo_round.svg");
+            colorize: white;
+            vertical-alignment: center;
+            opacity: logged_in ? 0 : 1;
+            animate opacity {
+                duration: 200ms;
+                easing: ease-in-out;
+            }
+        }
+    }
+
+    Path {
+        fill: #41013C;
+        width: logged_in ? 400% : 0%;
+        height: logged_in ? 400% : 0%;
+        animate width {
+            delay: 200ms;
+            duration: 2000ms;
+            easing: ease-in-out;
+        }
+        animate height {
+            delay: 200ms;
+            duration: 2000ms;
+            easing: ease-in-out;
+        }
+        MoveTo {
+            x: 1;
+            y: 0;
+        }
+
+        ArcTo {
+            radius-x: 1;
+            radius-y: 1;
+            sweep: false;
+            large-arc: true;
+            x: 2;
+            y: 0;
+        }
+
+        ArcTo {
+            radius-x: 1;
+            radius-y: 1;
+            sweep: false;
+            large-arc: true;
+            x: 2;
+            y: 0;
+        }
+    }
+
+    Rectangle {
+        opacity: logged_in ? 1 : 0;
+        animate opacity {
+            delay: 2000ms + 200ms;
+            duration: 200ms;
+            easing: ease-in-out;
+        }
+
+        Image {
+            source: @image-url("./floating-cogs.svg");
+            vertical-tiling: repeat;
+            horizontal-tiling: repeat;
+            width: 100%;
+            height: 100%;
+            colorize: #380033;
+        }
+
+        HorizontalLayout {
+            alignment: center;
+
+            VerticalLayout {
+                alignment: center;
+
+                Rectangle {
+                    // background: #380033;
+                    // border-radius: 10px;
+                    // clip: true;
+
+                    HorizontalLayout {
+                        padding: 16px;
+                        padding-left: 0px;
+
+                        alignment: start;
+                        Rectangle {
+                            Image {
+                                source: profile_picture;
+                                width: 256px;
+                                height: 256px;
+                                horizontal-alignment: center;
+                            }
+                        }
+
+                        VerticalLayout {
+                            alignment: start;
+                            HorizontalLayout {
+                                alignment: start;
+                                spacing: 8px;
+
+                                Text {
+                                    text: name;
+                                    color: white;
+                                }
+
+                                Text {
+                                    text: "(" + uid + ")";
+                                    color: gray;
+                                }
+                            }
+
+                            Text {
+                                text: credits + " Credits";
+                                color: white;
+                                font-weight: 400;
+                            }
+                        }
+                    }
                 }
             }
+        }
     }
+
+    // if logged_in :
+    //     VerticalBox {
+    //         alignment: end;                
+    //         Text {
+    //             text: "Insert Cash or Select Payment Type";
+    //             horizontal-alignment: center;
+    //             height: 110px;
+    //         }
+    //     }
+    // if logged_in:
+    //     Text {
+    //         text: "🢃               🢃               🢃";
+    //         horizontal-alignment: center;
+    //         y: root.height - ((sin((mod(animation-tick(), 2s) / 2s) * 360deg) * 7px) + 60px);
+    //     }
 }

@@ -1,9 +1,8 @@
-
 use anyhow::anyhow;
 use log::{debug, error};
 use reqwest::{
-    blocking::Client,
     header::{HeaderMap, HeaderValue},
+    Client,
 };
 use serde::Deserialize;
 use serde_aux::prelude::*;
@@ -41,12 +40,14 @@ impl DrinkApi {
         Client::builder().default_headers(map).build().unwrap()
     }
 
-    pub fn get_credits(&self, uid: &str) -> anyhow::Result<DrinkUser> {
+    pub async fn get_credits(&self, uid: &str) -> anyhow::Result<DrinkUser> {
         let http = self.http();
         let res: serde_json::Value = http
             .get(format!("{}/users/credits?uid={}", DRINK_ENDPOINT, uid))
-            .send()?
-            .json()?;
+            .send()
+            .await?
+            .json()
+            .await?;
         let message = res.get("message").unwrap();
         if let Some(user) = res.get("user") {
             debug!("Got credits for '{}': {}", uid, message);
@@ -57,7 +58,7 @@ impl DrinkApi {
         }
     }
 
-    pub fn set_credits(&self, uid: &str, credits: i64) -> anyhow::Result<()> {
+    pub async fn set_credits(&self, uid: &str, credits: i64) -> anyhow::Result<()> {
         let http = self.http();
         let res = http
             .put(format!("{}/users/credits", DRINK_ENDPOINT))
@@ -65,9 +66,10 @@ impl DrinkApi {
                 "uid": uid,
                 "drinkBalance": credits
             }))
-            .send()?;
+            .send()
+            .await?;
         let status = res.status();
-        let json: serde_json::Value = res.json()?;
+        let json: serde_json::Value = res.json().await?;
 
         if status.is_success() {
             debug!("Success: {}", json.get("message").unwrap());

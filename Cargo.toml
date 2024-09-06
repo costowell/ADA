@@ -3,6 +3,7 @@ name = "ada"
 version = "0.1.0"
 edition = "2021"
 build = "build.rs"
+rust-version = "1.74.1"
 
 [dependencies]
 anyhow = "1.0.86"
@@ -22,7 +23,7 @@ tokio-serial = { version = "5.4.4", features = ["codec", "rt"] }
 tokio-util = { version = "0.7.11", features = ["codec"] }
 slint = "1.6"
 futures = { version = "0.3.30", features = ["executor"] }
-image = "0.25.2"
+image = "0.24.9"
 
 [build-dependencies]
 slint-build = "1.6"

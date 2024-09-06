@@ -3,82 +3,40 @@ mod drink;
 mod runtime;
 mod ui;
 
-use std::{thread::sleep, time::Duration};
+use std::{io::Cursor, thread::sleep, time::Duration};
 
 use clap::{Arg, Command};
 use controller::{codec::AdaControllerCommand, AdaController};
 use drink::DrinkApi;
+use gatekeeper_members::{GateKeeperMemberListener, RealmType};
+use image::io::Reader as ImageReader;
 use log::{error, info};
-use slint::ComponentHandle;
-use tokio::sync::mpsc;
 use runtime::runtime;
-
-fn lmao() {
-    let drink = DrinkApi::new(std::env::var("DRINK_API_KEY").unwrap());
-    info!("Getting drink credits...");
-    match drink.get_credits("keylime") {
-        Ok(user) => {
-            info!(
-                "{} ({}) has {} drink credits",
-                user.cn, user.uid, user.drink_balance
-            );
-
-            info!("Setting to {} drink credits...", user.drink_balance);
-            match drink.set_credits(&user.uid, user.drink_balance) {
-                Ok(()) => info!("Successfully set credits to {}!", user.drink_balance),
-                Err(err) => error!("Failed to set drink credits: {}", err),
-            }
-        }
-        Err(err) => {
-            error!("Failed to get drink credits: {}", err);
-        }
-    }
-}
-
-async fn stuff(rfid_device: String, controller_device: &str) {
-    // Connect to controller and wait for it to initialize
-    let controller = AdaController::new(controller_device);
-    controller.listen().await.unwrap();
-    sleep(Duration::from_secs(5));
-
-    // Testing BS
-    controller
-        .send_command(controller::codec::AdaControllerCommand::Accept)
-        .await;
-    let mut rx = controller.rx.lock().await.clone().unwrap();
-    println!("Maybe back?");
-    loop {
-        if rx.changed().await.is_err() {
-            break;
-        }
-        if let Some(value) = rx.borrow_and_update().clone() {
-            println!("{value}");
-        }
-    }
-}
+use slint::{ComponentHandle, Image, SharedPixelBuffer};
+use tokio::sync::mpsc;
 
 fn gatekeeper_listen(rfid_device: String) -> mpsc::Receiver<String> {
     let (tx, rx) = mpsc::channel(10);
 
     std::thread::spawn(move || {
-        //let mut member_listener =
-        //    GateKeeperMemberListener::new(rfid_device, RealmType::Drink).unwrap();
-        //loop {
-        //    if let Some(association) = member_listener.poll_for_user() {
-        //        if let Ok(user) = member_listener.fetch_user(association.clone()) {
-        //            futures::executor::block_on(
-        //                tx.send(user["user"]["uid"].as_str().unwrap().to_string()),
-        //            )
-        //            .unwrap();
-        //        } else {
-        //            error!("Failed to fetch user");
-        //        }
-        //    }
-        //}
+        let mut member_listener =
+            GateKeeperMemberListener::new(rfid_device, RealmType::Drink).unwrap();
+        loop {
+            if let Some(association) = member_listener.poll_for_user() {
+                if let Ok(user) = member_listener.fetch_user(association.clone()) {
+                    futures::executor::block_on(
+                        tx.send(user["user"]["uid"].as_str().unwrap().to_string()),
+                    )
+                    .unwrap();
+                } else {
+                    error!("Failed to fetch user");
+                }
+            }
+        }
 
-        std::thread::sleep(Duration::from_secs(2));
-
-        futures::executor::block_on(tx.send("cole".to_string())).unwrap();
+        //std::thread::sleep(Duration::from_secs(2));
+        //
+        //futures::executor::block_on(tx.send("cole".to_string())).unwrap();
     });
     rx
 }
@@ -122,14 +80,43 @@ fn main() {
     {
         let window = window.as_weak();
         slint::spawn_local(async move {
-            let window = window.upgrade().unwrap();
-            while let Some(uid) = gatekeeper_rx.recv().await {
-                info!("Logged in as '{uid}'");
-                match drink.get_credits(&uid) {
-                    Ok(user) => window.login(user).await,
-                    Err(err) => error!("Failed to get drink credits: {err}"),
+            let rt = runtime();
+            rt.spawn(async move {
+                while let Some(uid) = gatekeeper_rx.recv().await {
+                    info!("Logged in as '{uid}'");
+                    match drink.get_credits(&uid).await {
+                        Ok(user) => {
+                            let window = window.clone();
+                            let bytes =
+                                reqwest::get(format!("https://profiles.csh.rit.edu/image/{}", uid))
+                                    .await
+                                    .unwrap()
+                                    .bytes()
+                                    .await
+                                    .unwrap();
+                            let img = ImageReader::new(Cursor::new(bytes))
+                                .with_guessed_format()
+                                .unwrap()
+                                .decode()
+                                .unwrap();
+
+                            window
+                                .upgrade_in_event_loop(move |window| {
+                                    window.login(
+                                        user,
+                                        Image::from_rgba8(SharedPixelBuffer::clone_from_slice(
+                                            &img.to_rgba8(),
+                                            img.width(),
+                                            img.height(),
+                                        )),
+                                    );
+                                })
+                                .unwrap();
+                        }
+                        Err(err) => error!("Failed to get drink credits: {err}"),
+                    }
                 }
-            }
+            });
         })
         .unwrap();
     }
