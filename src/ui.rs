@@ -5,11 +5,13 @@ use crate::drink::DrinkUser;
 slint::include_modules!();
 
 impl AppWindow {
-    pub fn login(&self, user: DrinkUser, profile_picture: Image) {
+    pub fn login(&self, user: DrinkUser, profile_picture: Option<Image>) {
         self.set_logged_in(true);
         self.set_uid(user.uid.clone().into());
         self.set_name(user.cn.clone().into());
         self.set_credits(user.drink_balance.try_into().unwrap());
-        self.set_profile_picture(profile_picture);
+        if let Some(profile_picture) = profile_picture {
+            self.set_profile_picture(profile_picture);
+        }
     }
 }

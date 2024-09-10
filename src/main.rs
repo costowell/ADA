@@ -19,24 +19,24 @@ fn gatekeeper_listen(rfid_device: String) -> mpsc::Receiver<String> {
     let (tx, rx) = mpsc::channel(10);
 
     std::thread::spawn(move || {
-        let mut member_listener =
-            GateKeeperMemberListener::new(rfid_device, RealmType::Drink).unwrap();
-        loop {
-            if let Some(association) = member_listener.poll_for_user() {
-                if let Ok(user) = member_listener.fetch_user(association.clone()) {
-                    futures::executor::block_on(
-                        tx.send(user["user"]["uid"].as_str().unwrap().to_string()),
-                    )
-                    .unwrap();
-                } else {
-                    error!("Failed to fetch user");
-                }
-            }
-        }
+        //let mut member_listener =
+        //    GateKeeperMemberListener::new(rfid_device, RealmType::Drink).unwrap();
+        //loop {
+        //    if let Some(association) = member_listener.poll_for_user() {
+        //        if let Ok(user) = member_listener.fetch_user(association.clone()) {
+        //            futures::executor::block_on(
+        //                tx.send(user["user"]["uid"].as_str().unwrap().to_string()),
+        //            )
+        //            .unwrap();
+        //        } else {
+        //            error!("Failed to fetch user");
+        //        }
+        //    }
+        //}
 
-        //std::thread::sleep(Duration::from_secs(2));
-        //
-        //futures::executor::block_on(tx.send("cole".to_string())).unwrap();
+        std::thread::sleep(Duration::from_secs(2));
+
+        futures::executor::block_on(tx.send("cole".to_string())).unwrap();
     });
     rx
 }
@@ -87,28 +87,24 @@ fn main() {
                     match drink.get_credits(&uid).await {
                         Ok(user) => {
                             let window = window.clone();
-                            let bytes =
-                                reqwest::get(format!("https://profiles.csh.rit.edu/image/{}", uid))
-                                    .await
-                                    .unwrap()
-                                    .bytes()
-                                    .await
-                                    .unwrap();
-                            let img = ImageReader::new(Cursor::new(bytes))
-                                .with_guessed_format()
-                                .unwrap()
-                                .decode()
-                                .unwrap();
+                            //let bytes =
+                            //    reqwest::get(format!("https://profiles.csh.rit.edu/image/{}", uid))
+                            //        .await
+                            //        .unwrap()
+                            //        .bytes()
+                            //        .await
+                            //        .unwrap();
+                            //let img = ImageReader::new(Cursor::new(bytes))
+                            //    .with_guessed_format()
+                            //    .unwrap()
+                            //    .decode()
+                            //    .unwrap();
 
                             window
                                 .upgrade_in_event_loop(move |window| {
                                     window.login(
                                         user,
-                                        Image::from_rgba8(SharedPixelBuffer::clone_from_slice(
-                                            &img.to_rgba8(),
-                                            img.width(),
-                                            img.height(),
-                                        )),
+                                        None
                                     );
                                 })
                                 .unwrap();

@@ -1,4 +1,4 @@
-use std::{io::Read, str::FromStr};
+use std::str::FromStr;
 
 use strum::{Display, EnumString};
 use tokio_util::{
@@ -41,7 +41,7 @@ impl AdaControllerResponse {
             Self::OneDollar => 100,
             Self::FiveDollar => 500,
             Self::TenDollar => 1000,
-            Self::TwentyDollar => 2000
+            Self::TwentyDollar => 2000,
         }
     }
 }
