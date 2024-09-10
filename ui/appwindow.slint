@@ -5,7 +5,7 @@ export component AppWindow inherits Window {
     in-out property <string> uid: "";
     in-out property <string> name: "";
     in-out property <int> credits: -1;
-    in-out property <image> profile_picture: @image-url("./csh_logo_round.svg");
+    in-out property <image> profile_picture: @image-url("./scan-id.svg");
     in-out property <int> radius;
     out property <float> tick: mod(animation-tick(), 2s) / 2s;
     no-frame: true;
@@ -17,7 +17,7 @@ export component AppWindow inherits Window {
         background: #B0197E;
         Image {
             height: (self.opacity > 0 ? sin(tick * 360deg) * 50px : 0px) + 300px;
-            source: @image-url("./csh_logo_round.svg");
+            source: @image-url("./scan-id.svg");
             colorize: white;
             vertical-alignment: center;
             opacity: logged_in ? 0 : 1;
@@ -75,7 +75,7 @@ export component AppWindow inherits Window {
         }
 
         Image {
-            source: @image-url("./floating-cogs.svg");
+            source: @image-url("./csh-tile.svg");
             vertical-tiling: repeat;
             horizontal-tiling: repeat;
             width: 100%;
