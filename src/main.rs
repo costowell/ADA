@@ -19,24 +19,24 @@ fn gatekeeper_listen(rfid_device: String) -> mpsc::Receiver<String> {
     let (tx, rx) = mpsc::channel(10);
 
     std::thread::spawn(move || {
-        //let mut member_listener =
-        //    GateKeeperMemberListener::new(rfid_device, RealmType::Drink).unwrap();
-        //loop {
-        //    if let Some(association) = member_listener.poll_for_user() {
-        //        if let Ok(user) = member_listener.fetch_user(association.clone()) {
-        //            futures::executor::block_on(
-        //                tx.send(user["user"]["uid"].as_str().unwrap().to_string()),
-        //            )
-        //            .unwrap();
-        //        } else {
-        //            error!("Failed to fetch user");
-        //        }
-        //    }
-        //}
+        let mut member_listener =
+            GateKeeperMemberListener::new(rfid_device, RealmType::Drink).unwrap();
+        loop {
+            if let Some(association) = member_listener.poll_for_user() {
+                if let Ok(user) = member_listener.fetch_user(association.clone()) {
+                    futures::executor::block_on(
+                        tx.send(user["user"]["uid"].as_str().unwrap().to_string()),
+                    )
+                    .unwrap();
+                } else {
+                    error!("Failed to fetch user");
+                }
+            }
+        }
 
-        std::thread::sleep(Duration::from_secs(2));
-
-        futures::executor::block_on(tx.send("cole".to_string())).unwrap();
+        //std::thread::sleep(Duration::from_secs(2));
+        //
+        //futures::executor::block_on(tx.send("cole".to_string())).unwrap();
     });
     rx
 }
