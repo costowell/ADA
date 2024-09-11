@@ -12,4 +12,7 @@ impl AppWindow {
         self.set_credits(user.drink_balance.try_into().unwrap());
         self.set_profile_picture(profile_picture);
     }
+    pub fn logout(&self) {
+        self.set_logged_in(false);
+    }
 }

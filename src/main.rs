@@ -9,7 +9,7 @@ use clap::{Arg, Command};
 use controller::{codec::AdaControllerCommand, AdaController};
 use drink::DrinkApi;
 use gatekeeper_members::{GateKeeperMemberListener, RealmType};
-use image::io::Reader as ImageReader;
+use image::{io::Reader as ImageReader, GenericImageView};
 use log::{error, info};
 use runtime::runtime;
 use slint::{ComponentHandle, Image, SharedPixelBuffer};
@@ -33,12 +33,26 @@ fn gatekeeper_listen(rfid_device: String) -> mpsc::Receiver<String> {
                 }
             }
         }
+        
 
         //std::thread::sleep(Duration::from_secs(2));
-        //
-        //futures::executor::block_on(tx.send("cole".to_string())).unwrap();
+        //loop {
+        //    futures::executor::block_on(tx.send("cole".to_string())).unwrap();
+        //    std::thread::sleep(Duration::from_secs(10));
+        //}
     });
     rx
+}
+
+// Math reference: https://math.stackexchange.com/questions/1649714/whats-the-equation-for-a-rectircle-perfect-rounded-corner-rectangle-without-s
+// Keeping here in case we gotta do some manual image processing
+fn is_in_rounded_box(x: u32, y: u32, width: u32, height: u32, r: f32) -> bool {
+    let a = width as f32 / 2.0;
+    let b = height as f32 / 2.0;
+    let x = x as f32 - a;
+    let y = y as f32 - b;
+    let value = (x.abs() / a).powf(2.0 * a / r) + (y.abs() / b).powf(2.0 * b / r);
+    value <= 1.0
 }
 
 fn main() {
@@ -79,46 +93,51 @@ fn main() {
 
     {
         let window = window.as_weak();
-        slint::spawn_local(async move {
-            let rt = runtime();
-            rt.spawn(async move {
-                while let Some(uid) = gatekeeper_rx.recv().await {
-                    info!("Logged in as '{uid}'");
-                    match drink.get_credits(&uid).await {
-                        Ok(user) => {
-                            let window = window.clone();
-                            let bytes =
-                                reqwest::get(format!("https://profiles.csh.rit.edu/image/{}", uid))
-                                    .await
-                                    .unwrap()
-                                    .bytes()
-                                    .await
-                                    .unwrap();
-                            let img = ImageReader::new(Cursor::new(bytes))
-                                .with_guessed_format()
+        let rt = runtime();
+        rt.spawn(async move {
+            while let Some(uid) = gatekeeper_rx.recv().await {
+                info!("Logged in as '{uid}'");
+                match drink.get_credits(&uid).await {
+                    Ok(user) => {
+                        let window = window.clone();
+                        let bytes =
+                            reqwest::get(format!("https://profiles.csh.rit.edu/image/{}", uid))
+                                .await
                                 .unwrap()
-                                .decode()
+                                .bytes()
+                                .await
                                 .unwrap();
+                        let img = ImageReader::new(Cursor::new(bytes))
+                            .with_guessed_format()
+                            .unwrap()
+                            .decode()
+                            .unwrap();
+                        let (width, height) = img.dimensions();
 
-                            window
-                                .upgrade_in_event_loop(move |window| {
-                                    window.login(
-                                        user,
-                                        Image::from_rgba8(SharedPixelBuffer::clone_from_slice(
-                                            &img.to_rgba8(),
-                                            img.width(),
-                                            img.height(),
-                                        )),
-                                    );
-                                })
-                                .unwrap();
-                        }
-                        Err(err) => error!("Failed to get drink credits: {err}"),
+                        window
+                            .upgrade_in_event_loop(move |window| {
+                                window.login(
+                                    user,
+                                    Image::from_rgba8(SharedPixelBuffer::clone_from_slice(
+                                        &img.to_rgba8(),
+                                        width,
+                                        height,
+                                    )),
+                                );
+                            })
+                            .unwrap();
+
+                        // Wait and logout
+                        tokio::time::sleep(Duration::from_secs(5)).await;
+
+                        window
+                            .upgrade_in_event_loop(move |window| window.logout())
+                            .unwrap();
                     }
+                    Err(err) => error!("Failed to get drink credits: {err}"),
                 }
-            });
-        })
-        .unwrap();
+            }
+        });
     }
     {
         let window = window.as_weak();

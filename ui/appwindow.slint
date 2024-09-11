@@ -7,7 +7,9 @@ export component AppWindow inherits Window {
     in-out property <int> credits: -1;
     in-out property <image> profile_picture: @image-url("./scan-id.svg");
     in-out property <int> radius;
-    out property <float> tick: mod(animation-tick(), 2s) / 2s;
+    out property <float> tick_2s: mod(animation-tick(), 2s) / 2s;
+    out property <float> tick_5s: mod(animation-tick(), 5s) / 5s;
+    out property <float> tick_20s: mod(animation-tick(), 20s) / 20s;
     no-frame: true;
     default-font-family: "DejaVu Sans";
     default-font-size: 35px;
@@ -16,70 +18,69 @@ export component AppWindow inherits Window {
     Rectangle {
         background: #B0197E;
         Image {
-            height: (self.opacity > 0 ? sin(tick * 360deg) * 50px : 0px) + 300px;
+            height: (self.opacity > 0 ? sin(tick_2s * 360deg) * 50px : 0px) + 300px;
             source: @image-url("./scan-id.svg");
             colorize: white;
             vertical-alignment: center;
-            opacity: logged_in ? 0 : 1;
+            //opacity: logged_in ? 0 : 1;
+
             animate opacity {
-                duration: 200ms;
-                easing: ease-in-out;
+                easing: ease-in;
+                duration: 300ms;
             }
         }
     }
 
-    Path {
+    circle := Path {
         fill: #41013C;
         width: logged_in ? 400% : 0%;
         height: logged_in ? 400% : 0%;
+        x: parent.width - self.width / 2;
+        y: parent.height - self.height / 2;
+
         animate width {
-            delay: 200ms;
-            duration: 2000ms;
+            delay: 100ms;
+            duration: 1000ms;
             easing: ease-in-out;
         }
+
         animate height {
-            delay: 200ms;
-            duration: 2000ms;
+            delay: 100ms;
+            duration: 1000ms;
             easing: ease-in-out;
         }
+
         MoveTo {
-            x: 1;
+            x: -1;
             y: 0;
         }
 
         ArcTo {
             radius-x: 1;
             radius-y: 1;
-            sweep: false;
-            large-arc: true;
-            x: 2;
-            y: 0;
-        }
-
-        ArcTo {
-            radius-x: 1;
-            radius-y: 1;
-            sweep: false;
-            large-arc: true;
+            sweep: true;
+            large-arc: false;
             x: 2;
             y: 0;
         }
     }
 
     Rectangle {
-        opacity: logged_in ? 1 : 0;
+        opacity: circle.width > parent.width * 3 ? 1 : 0;
+
         animate opacity {
-            delay: 2000ms + 200ms;
-            duration: 200ms;
-            easing: ease-in-out;
+            duration: 100ms;
+            easing: linear;
         }
 
         Image {
-            source: @image-url("./csh-tile.png");
+            source: @image-url("./csh-tile.svg");
             vertical-tiling: repeat;
             horizontal-tiling: repeat;
-            width: 100%;
-            height: 100%;
+            y: (tick_5s * 400px) - 400px;
+            x: (tick_20s * -400px);
+            width: 150%;
+            height: 150%;
             colorize: #380033;
         }
 
@@ -90,9 +91,6 @@ export component AppWindow inherits Window {
                 alignment: center;
 
                 Rectangle {
-                    // background: #380033;
-                    // border-radius: 10px;
-                    // clip: true;
 
                     HorizontalLayout {
                         padding: 16px;
@@ -100,11 +98,19 @@ export component AppWindow inherits Window {
 
                         alignment: start;
                         Rectangle {
-                            Image {
-                                source: profile_picture;
+                            Rectangle {
+                                clip: true;
+                                background: #41013C;
+                                border-radius: 20px;
                                 width: 256px;
                                 height: 256px;
-                                horizontal-alignment: center;
+
+                                Image {
+                                    source: profile_picture;
+                                    width: 256px;
+                                    height: 256px;
+                                    horizontal-alignment: center;
+                                }
                             }
                         }
 
@@ -136,20 +142,4 @@ export component AppWindow inherits Window {
             }
         }
     }
-
-    // if logged_in :
-    //     VerticalBox {
-    //         alignment: end;                
-    //         Text {
-    //             text: "Insert Cash or Select Payment Type";
-    //             horizontal-alignment: center;
-    //             height: 110px;
-    //         }
-    //     }
-    // if logged_in:
-    //     Text {
-    //         text: "🢃               🢃               🢃";
-    //         horizontal-alignment: center;
-    //         y: root.height - ((sin((mod(animation-tick(), 2s) / 2s) * 360deg) * 7px) + 60px);
-    //     }
 }
