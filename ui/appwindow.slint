@@ -1,5 +1,23 @@
 import { Button, VerticalBox, AboutSlint, HorizontalBox } from "std-widgets.slint";
 
+component RepeatedImage {
+    //preferred-height: 100%;
+    //preferred-width: 100%;
+    in property <image> source;
+    in property <color> colorize;
+    Rectangle {
+        clip: true;
+        HorizontalLayout {
+            for _ in 10 : VerticalLayout {
+                for _ in 10 : Image {
+                    source: root.source;
+                    colorize: root.colorize;
+                }
+            }
+        }
+    }
+}
+
 export component AppWindow inherits Window {
     in-out property <bool> logged_in: false;
     in-out property <string> uid: "";
@@ -73,15 +91,11 @@ export component AppWindow inherits Window {
             easing: linear;
         }
 
-        Image {
+        RepeatedImage {
             source: @image-url("./csh-tile.svg");
-            vertical-tiling: repeat;
-            horizontal-tiling: repeat;
+            colorize: #380033;
             y: (tick_5s * 400px) - 400px;
             x: (tick_20s * -400px);
-            width: 150%;
-            height: 150%;
-            colorize: #380033;
         }
 
         HorizontalLayout {
