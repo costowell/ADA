@@ -21,7 +21,7 @@ strum = { version = "0.26.3", features = ["derive"] }
 tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
 tokio-serial = { version = "5.4.4", features = ["codec", "rt"] }
 tokio-util = { version = "0.7.11", features = ["codec"] }
-slint = "1.6"
+slint = { version = "1.6", default-features = false, features = ["backend-winit", "renderer-skia", "compat-1-2"] }
 futures = { version = "0.3.30", features = ["executor"] }
 image = "0.24.9"
 
