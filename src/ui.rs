@@ -11,7 +11,7 @@ impl AppWindow {
         self.set_name(user.cn.clone().into());
         self.set_credits(user.drink_balance.try_into().unwrap());
         self.set_profile_picture(profile_picture);
-        self.set_seconds_to_logout(self.get_max_seconds_to_logout());
+        self.set_offset(self.get_tick());
     }
     pub fn logout(&self) {
         self.set_logged_in(false);

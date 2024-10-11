@@ -18,36 +18,6 @@ component RepeatedImage {
     }
 }
 
-component Dingus {
-    in-out property <float> level: 0.50;
-    Rectangle {
-        x: root.width - self.width - 20px;
-        y: 20px;
-
-        width: 250px;
-        height: 250px;
-
-        Path {
-            stroke-width: 20px;
-            stroke: #e0e0e0;
-            MoveTo {
-                x: 50;
-                y: 10;
-            }
-
-            ArcTo {
-                radius-x: 40;
-                radius-y: 40;
-                x-rotation: 0;
-                large-arc: true;
-                sweep: true;
-                x: 50 + 40*cos(level * 360deg);
-                y: 50 + 40*sin(level * 360deg);
-            }
-        }
-        }
-}
-
 export component AppWindow inherits Window {
     in-out property <bool> logged_in: false;
     in-out property <string> uid: "";
@@ -58,9 +28,10 @@ export component AppWindow inherits Window {
     private property <float> tick_2s: mod(animation-tick(), 2s) / 2s;
     private property <float> tick_5s: mod(animation-tick(), 5s) / 5s;
     private property <float> tick_20s: mod(animation-tick(), 20s) / 20s;
-    out property <int> max_seconds_to_logout: 10;
-    in property <int> seconds_to_logout: max_seconds_to_logout;
-    private property <float> percent_to_logout: 0.99 - (seconds_to_logout / max_seconds_to_logout);
+    out property <duration> session_duration: 30s;
+    out property <duration> tick: animation-tick();
+    in-out property <duration> offset: 0;
+    out property <float> logout_time: logged_in ? (mod(animation-tick() - offset, session_duration) / session_duration) : 0.999999;
     no-frame: true;
     default-font-family: "DejaVu Sans";
     default-font-size: 35px;
@@ -199,65 +170,64 @@ export component AppWindow inherits Window {
             height: 100px;
 
             Text {
-                text: seconds_to_logout;
+                text: floor(((1 - logout_time) * session_duration) / 1s);
+                color: #ffffff;
             }
 
             Path {
-                stroke-width: 5px;
+                stroke-width: 10px;
                 stroke: #6b6b6b;
                 viewbox-x: 0;
                 viewbox-y: 0;
-                viewbox-width: 100;
-                viewbox-height: 100;
+                viewbox-width: 10;
+                viewbox-height: 10;
                 
                 MoveTo {
-                    x: 50;
-                    y: 10;
+                    x: 5;
+                    y: 1;
                 }
                 ArcTo {
-                    radius-x: 40;
-                    radius-y: 40;
+                    radius-x: 4;
+                    radius-y: 4;
                     x-rotation: 0;
                     large-arc: true;
                     sweep: true;
-                    x: 50;
-                    y: 90;
+                    x: 5;
+                    y: 9;
                 }
                 ArcTo {
-                    radius-x: 40;
-                    radius-y: 40;
+                    radius-x: 4;
+                    radius-y: 4;
                     x-rotation: 0;
                     large-arc: true;
                     sweep: true;
-                    x: 50;
-                    y: 10;
+                    x: 5;
+                    y: 1;
                 }
             }
 
             Path {
-                stroke-width: 5px;
+                stroke-width: 10px;
                 stroke: #e0e0e0;
                 viewbox-x: 0;
                 viewbox-y: 0;
-                viewbox-width: 100;
-                viewbox-height: 100;
+                viewbox-width: 10;
+                viewbox-height: 10;
                 
                 MoveTo {
-                    x: 50;
-                    y: 10;
+                    x: 5;
+                    y: 1;
                 }
-
                 ArcTo {
-                    radius-x: 40;
-                    radius-y: 40;
+                    radius-x: 4;
+                    radius-y: 4;
                     x-rotation: 0;
-                    large-arc: percent_to_logout > 0.5;
+                    large-arc: logout_time > 0.5;
                     sweep: true;
-                    x: 50+40*sin(percent_to_logout*360deg);
-                    y: 50-40*cos(percent_to_logout*360deg);
+                    x: 5+4*sin(logout_time*360deg);
+                    y: 5-4*cos(logout_time*360deg);
                 }
             }
         }
-        
     }
 }

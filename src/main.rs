@@ -19,26 +19,24 @@ fn gatekeeper_listen(rfid_device: String) -> mpsc::Receiver<String> {
     let (tx, rx) = mpsc::channel(10);
 
     std::thread::spawn(move || {
-         let mut member_listener =
-             GateKeeperMemberListener::new(rfid_device, RealmType::Drink).unwrap();
-         loop {
-             if let Some(association) = member_listener.poll_for_user() {
-                 if let Ok(user) = member_listener.fetch_user(association.clone()) {
-                     futures::executor::block_on(
-                         tx.send(user["user"]["uid"].as_str().unwrap().to_string()),
-                     )
-                     .unwrap();
-                 } else {
-                     error!("Failed to fetch user");
-                 }
-             }
-         }
-        
+        let mut member_listener =
+            GateKeeperMemberListener::new(rfid_device, RealmType::Drink).unwrap();
+        loop {
+            if let Some(association) = member_listener.poll_for_user() {
+                if let Ok(user) = member_listener.fetch_user(association.clone()) {
+                    futures::executor::block_on(
+                        tx.send(user["user"]["uid"].as_str().unwrap().to_string()),
+                    )
+                    .unwrap();
+                } else {
+                    error!("Failed to fetch user");
+                }
+            }
+        }
 
-        //std::thread::sleep(Duration::from_secs(10));
         //loop {
+        //   std::thread::sleep(Duration::from_secs(2));
         //   futures::executor::block_on(tx.send("cole".to_string())).unwrap();
-        //   std::thread::sleep(Duration::from_secs(10));
         //}
     });
     rx
@@ -90,6 +88,7 @@ fn main() {
 
     let window = ui::AppWindow::new().unwrap();
     let drink = DrinkApi::new(std::env::var("DRINK_API_KEY").unwrap());
+    let session_duration = window.get_session_duration();
 
     {
         let window = window.as_weak();
@@ -127,15 +126,7 @@ fn main() {
                             })
                             .unwrap();
 
-                        for i in (0..10).rev() {
-                            tokio::time::sleep(Duration::from_secs(1)).await;
-                            window
-                                .upgrade_in_event_loop(move |window| {
-                                    window.set_seconds_to_logout(i);
-                                })
-                                .unwrap();
-                        }
-
+                        tokio::time::sleep(Duration::from_millis(session_duration as u64)).await;
                         window
                             .upgrade_in_event_loop(move |window| window.logout())
                             .unwrap();
