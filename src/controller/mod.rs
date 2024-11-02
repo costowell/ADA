@@ -24,7 +24,7 @@ impl AdaController {
             endpoint: endpoint.to_string(),
         }
     }
-    pub async fn listen(&self) -> anyhow::Result<()> {
+    pub async fn connect(&self) -> anyhow::Result<()> {
         let conn = tokio_serial::new(self.endpoint.clone(), BAUD_RATE).open_native_async()?;
         let stream = AdaControllerCodec.framed(conn);
         let (mut tx, mut rx) = stream.split();
@@ -67,7 +67,7 @@ impl AdaController {
     }
 
     pub async fn send_command(&self, command: AdaControllerCommand) {
-        let tx = self.tx.lock().await.clone().unwrap();
+        let tx = self.tx.lock().await.clone().expect("You must called connect() before sending any commands.");
         tx.send(command).unwrap();
     }
 }

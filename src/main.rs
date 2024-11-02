@@ -3,7 +3,7 @@ mod drink;
 mod runtime;
 mod ui;
 
-use std::{io::Cursor, thread::sleep, time::Duration};
+use std::{io::Cursor, sync::Arc, thread::sleep, time::Duration};
 
 use clap::{Arg, Command};
 use controller::{codec::AdaControllerCommand, AdaController};
@@ -13,7 +13,7 @@ use image::{io::Reader as ImageReader, GenericImageView};
 use log::{error, info};
 use runtime::runtime;
 use slint::{ComponentHandle, Image, SharedPixelBuffer};
-use tokio::sync::mpsc;
+use tokio::sync::{mpsc, watch, Mutex};
 
 fn gatekeeper_listen(rfid_device: String) -> mpsc::Receiver<String> {
     let (tx, rx) = mpsc::channel(10);
@@ -35,8 +35,8 @@ fn gatekeeper_listen(rfid_device: String) -> mpsc::Receiver<String> {
         }
 
         //loop {
-        //   std::thread::sleep(Duration::from_secs(2));
-        //   futures::executor::block_on(tx.send("cole".to_string())).unwrap();
+        //    std::thread::sleep(Duration::from_secs(2));
+        //    futures::executor::block_on(tx.send("cole".to_string())).unwrap();
         //}
     });
     rx
@@ -89,12 +89,14 @@ fn main() {
     let window = ui::AppWindow::new().unwrap();
     let drink = DrinkApi::new(std::env::var("DRINK_API_KEY").unwrap());
     let session_duration = window.get_session_duration();
+    let (uid_tx, mut uid_rx) = watch::channel(None);
 
     {
         let window = window.as_weak();
         let rt = runtime();
         rt.spawn(async move {
             while let Some(uid) = gatekeeper_rx.recv().await {
+                uid_tx.send(Some(uid.clone())).unwrap();
                 info!("Logged in as '{uid}'");
                 match drink.get_credits(&uid).await {
                     Ok(user) => {
@@ -127,6 +129,7 @@ fn main() {
                             .unwrap();
 
                         tokio::time::sleep(Duration::from_millis(session_duration as u64)).await;
+                        uid_tx.send(None).unwrap();
                         window
                             .upgrade_in_event_loop(move |window| window.logout())
                             .unwrap();
@@ -145,25 +148,46 @@ fn main() {
             rt.block_on(async {
                 // Connect to controller and wait for it to initialize
                 let controller = AdaController::new(&controller_device);
-                controller.listen().await.unwrap();
+                controller.connect().await.unwrap();
                 sleep(Duration::from_secs(5));
+                let uid = Arc::new(Mutex::new(None));
 
-                // Accept bills
-                controller.send_command(AdaControllerCommand::Accept).await;
-                let mut rx = controller.rx.lock().await.clone().unwrap();
-
-                loop {
-                    if rx.changed().await.is_err() {
-                        break;
-                    }
-                    if let Some(value) = rx.borrow_and_update().clone() {
-                        window
-                            .upgrade_in_event_loop(move |window| {
-                                println!("{value}");
-                                window
-                                    .set_credits(window.get_credits() + value.to_credits() as i32);
-                            })
-                            .unwrap();
+                {
+                    let uid = uid.clone();
+                    let mut rx = controller.rx.lock().await.clone().unwrap();
+                    tokio::spawn(async move {
+                        loop {
+                            if rx.changed().await.is_err() {
+                                break;
+                            }
+                            if let Some(uid) = &*uid.lock().await {
+                                if let Some(value) = rx.borrow_and_update().clone() {
+                                    println!("Adding {} to {}'s balance", value.to_credits(), uid);
+                                    window
+                                        .upgrade_in_event_loop(move |window| {
+                                            println!("{value}");
+                                            window.set_credits(
+                                                window.get_credits() + value.to_credits() as i32,
+                                            );
+                                        })
+                                        .unwrap();
+                                }
+                            }
+                        }
+                    });
+                }
+                {
+                    loop {
+                        if uid_rx.changed().await.is_err() {
+                            break;
+                        }
+                        if let Some(value) = uid_rx.borrow_and_update().clone() {
+                            controller.send_command(AdaControllerCommand::Accept).await;
+                            *uid.lock().await = Some(value);
+                        } else {
+                            controller.send_command(AdaControllerCommand::Inhibit).await;
+                            *uid.lock().await = None;
+                        }
                     }
                 }
             });
