@@ -7,7 +7,7 @@ use std::{io::Cursor, sync::Arc, thread::sleep, time::Duration};
 
 use clap::{Arg, Command};
 use controller::{codec::AdaControllerCommand, AdaController};
-use drink::DrinkApi;
+use drink::{DrinkApi, DrinkUser};
 use gatekeeper_members::{GateKeeperMemberListener, RealmType};
 use image::{io::Reader as ImageReader, GenericImageView};
 use log::{error, info};
@@ -87,12 +87,13 @@ fn main() {
     let mut gatekeeper_rx = gatekeeper_listen(rfid_device);
 
     let window = ui::AppWindow::new().unwrap();
-    let drink = DrinkApi::new(std::env::var("DRINK_API_KEY").unwrap());
+    let drink = Arc::new(DrinkApi::new(std::env::var("DRINK_API_KEY").unwrap()));
     let session_duration = window.get_session_duration();
     let (uid_tx, mut uid_rx) = watch::channel(None);
 
     {
         let window = window.as_weak();
+        let drink = drink.clone();
         let rt = runtime();
         rt.spawn(async move {
             while let Some(uid) = gatekeeper_rx.recv().await {
@@ -150,7 +151,7 @@ fn main() {
                 let controller = AdaController::new(&controller_device);
                 controller.connect().await.unwrap();
                 sleep(Duration::from_secs(5));
-                let uid = Arc::new(Mutex::new(None));
+                let uid: Arc<Mutex<Option<String>>> = Arc::new(Mutex::new(None));
 
                 {
                     let uid = uid.clone();
@@ -160,17 +161,23 @@ fn main() {
                             if rx.changed().await.is_err() {
                                 break;
                             }
-                            if let Some(uid) = &*uid.lock().await {
-                                if let Some(value) = rx.borrow_and_update().clone() {
-                                    println!("Adding {} to {}'s balance", value.to_credits(), uid);
-                                    window
-                                        .upgrade_in_event_loop(move |window| {
-                                            println!("{value}");
-                                            window.set_credits(
-                                                window.get_credits() + value.to_credits() as i32,
-                                            );
-                                        })
-                                        .unwrap();
+                            let uid = uid.lock().await.clone();
+                            if let Some(uid) = uid {
+                                let user = drink.get_credits(uid.as_str()).await;
+                                if let Ok(DrinkUser { drink_balance: balance, .. }) = user {
+                                    let value = rx.borrow_and_update().clone();
+                                    if let Some(value) = value {
+                                        let new_balance = balance + value.to_credits() as i64;
+                                        if drink.set_credits(uid.as_str(), new_balance).await.is_ok() {
+                                            window
+                                                .upgrade_in_event_loop(move |window| {
+                                                    window.set_credits(
+                                                        new_balance as i32,
+                                                    );
+                                                })
+                                                .unwrap();
+                                            }
+                                    }
                                 }
                             }
                         }

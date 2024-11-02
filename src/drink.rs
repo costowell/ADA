@@ -17,7 +17,7 @@ pub struct DrinkApi {
     secret: String,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct DrinkUser {
     pub uid: String,
