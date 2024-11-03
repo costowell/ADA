@@ -226,6 +226,7 @@ fn main() {
                                 window
                                     .upgrade_in_event_loop(move |window| {
                                         window.set_error_message(err.to_string().into());
+                                        window.set_loading(false);
                                     })
                                     .unwrap();
                             };
