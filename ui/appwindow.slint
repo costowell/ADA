@@ -22,6 +22,7 @@ export component AppWindow inherits Window {
     in-out property <bool> logged_in: false;
     in-out property <string> uid: "";
     in-out property <string> name: "";
+    in property <string> error_message: "";
     in-out property <int> credits: -1;
     in-out property <image> profile_picture: @image-url("./scan-id.svg");
     in-out property <int> radius;
@@ -230,4 +231,16 @@ export component AppWindow inherits Window {
             }
         }
     }
+    Rectangle {
+        Text {
+            y: 0;
+            width: root.width - 10px;
+            text: error_message;
+            color: white;
+            stroke: black;
+            stroke-width: 3px;
+            font-size: 20px;
+            wrap: TextWrap.word-wrap;
+        }
+    } 
 }

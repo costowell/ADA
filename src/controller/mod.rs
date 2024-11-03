@@ -1,5 +1,6 @@
 pub mod codec;
 
+use anyhow::anyhow;
 use codec::{AdaControllerCodec, AdaControllerCommand, AdaControllerResponse};
 use futures_util::{stream::StreamExt, SinkExt};
 use log::{debug, error};
@@ -25,7 +26,14 @@ impl AdaController {
         }
     }
     pub async fn connect(&self) -> anyhow::Result<()> {
-        let conn = tokio_serial::new(self.endpoint.clone(), BAUD_RATE).open_native_async()?;
+        let conn = tokio_serial::new(self.endpoint.clone(), BAUD_RATE)
+            .open_native_async()
+            .map_err(|e| {
+                anyhow!(
+                    "Failed to connect to money accepter controller: {}",
+                    e.to_string()
+                )
+            })?;
         let stream = AdaControllerCodec.framed(conn);
         let (mut tx, mut rx) = stream.split();
 
@@ -67,7 +75,12 @@ impl AdaController {
     }
 
     pub async fn send_command(&self, command: AdaControllerCommand) {
-        let tx = self.tx.lock().await.clone().expect("You must called connect() before sending any commands.");
+        let tx = self
+            .tx
+            .lock()
+            .await
+            .clone()
+            .expect("You must called connect() before sending any commands.");
         tx.send(command).unwrap();
     }
 }

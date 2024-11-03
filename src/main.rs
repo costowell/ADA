@@ -5,27 +5,40 @@ mod ui;
 
 use std::{io::Cursor, sync::Arc, thread::sleep, time::Duration};
 
+use anyhow::anyhow;
 use clap::{Arg, Command};
-use controller::{codec::AdaControllerCommand, AdaController};
-use drink::{DrinkApi, DrinkUser};
+use controller::{
+    codec::{AdaControllerCommand, AdaControllerResponse},
+    AdaController,
+};
+use drink::DrinkApi;
 use gatekeeper_members::{GateKeeperMemberListener, RealmType};
 use image::{io::Reader as ImageReader, GenericImageView};
 use log::{error, info};
 use runtime::runtime;
 use slint::{ComponentHandle, Image, SharedPixelBuffer};
-use tokio::sync::{mpsc, watch, Mutex};
+use tokio::sync::{
+    mpsc,
+    watch::{self, Receiver},
+    Mutex,
+};
 
-fn gatekeeper_listen(rfid_device: String) -> mpsc::Receiver<String> {
+fn gatekeeper_listen(rfid_device: String) -> mpsc::Receiver<anyhow::Result<String>> {
     let (tx, rx) = mpsc::channel(10);
 
     std::thread::spawn(move || {
-        let mut member_listener =
-            GateKeeperMemberListener::new(rfid_device, RealmType::Drink).unwrap();
+        let Some(mut member_listener) =
+            GateKeeperMemberListener::new(rfid_device, RealmType::Drink)
+        else {
+            futures::executor::block_on(tx.send(Err(anyhow!("Failed to initialize NFC device"))))
+                .unwrap();
+            return;
+        };
         loop {
             if let Some(association) = member_listener.poll_for_user() {
                 if let Ok(user) = member_listener.fetch_user(association.clone()) {
                     futures::executor::block_on(
-                        tx.send(user["user"]["uid"].as_str().unwrap().to_string()),
+                        tx.send(Ok(user["user"]["uid"].as_str().unwrap().to_string())),
                     )
                     .unwrap();
                 } else {
@@ -97,6 +110,17 @@ fn main() {
         let rt = runtime();
         rt.spawn(async move {
             while let Some(uid) = gatekeeper_rx.recv().await {
+                let Ok(uid) = uid else {
+                    let err = uid.unwrap_err();
+                    error!("{}", err);
+                    window
+                        .upgrade_in_event_loop(move |window| {
+                            window.set_error_message(err.to_string().into());
+                        })
+                        .unwrap();
+                    return;
+                };
+
                 uid_tx.send(Some(uid.clone())).unwrap();
                 info!("Logged in as '{uid}'");
                 match drink.get_credits(&uid).await {
@@ -149,37 +173,62 @@ fn main() {
             rt.block_on(async {
                 // Connect to controller and wait for it to initialize
                 let controller = AdaController::new(&controller_device);
-                controller.connect().await.unwrap();
+                if let Err(err) = controller.connect().await {
+                    error!("{err}");
+                    window
+                        .upgrade_in_event_loop(move |window| {
+                            window.set_error_message(err.to_string().into());
+                        })
+                        .unwrap();
+                    return;
+                }
                 sleep(Duration::from_secs(5));
                 let uid: Arc<Mutex<Option<String>>> = Arc::new(Mutex::new(None));
 
                 {
                     let uid = uid.clone();
-                    let mut rx = controller.rx.lock().await.clone().unwrap();
+                    let rx = controller.rx.lock().await.clone().unwrap();
                     tokio::spawn(async move {
+                        // My heart yearns for async closures
+                        async fn handle_money_input(
+                            mut rx: Receiver<Option<AdaControllerResponse>>,
+                            uid: Arc<Mutex<Option<String>>>,
+                            drink: Arc<DrinkApi>,
+                            window: slint::Weak<ui::AppWindow>,
+                        ) -> anyhow::Result<()> {
+                            rx.changed().await?;
+                            let uid = uid
+                                .lock()
+                                .await
+                                .clone()
+                                .ok_or(anyhow!("User is not logged in"))?;
+                            let uid = uid.as_str();
+                            let user = drink.get_credits(uid).await?;
+                            let value = rx.borrow_and_update().clone().ok_or(anyhow!(
+                                "No valid value received from bill and coin accepter controller"
+                            ))?;
+                            let new_balance = user.drink_balance + value.to_credits() as i64;
+                            drink.set_credits(uid, new_balance).await?;
+                            window.upgrade_in_event_loop(move |window| {
+                                window.set_credits(new_balance as i32);
+                            })?;
+                            Ok(())
+                        }
                         loop {
-                            if rx.changed().await.is_err() {
-                                break;
-                            }
-                            let uid = uid.lock().await.clone();
-                            if let Some(uid) = uid {
-                                let user = drink.get_credits(uid.as_str()).await;
-                                if let Ok(DrinkUser { drink_balance: balance, .. }) = user {
-                                    let value = rx.borrow_and_update().clone();
-                                    if let Some(value) = value {
-                                        let new_balance = balance + value.to_credits() as i64;
-                                        if drink.set_credits(uid.as_str(), new_balance).await.is_ok() {
-                                            window
-                                                .upgrade_in_event_loop(move |window| {
-                                                    window.set_credits(
-                                                        new_balance as i32,
-                                                    );
-                                                })
-                                                .unwrap();
-                                            }
-                                    }
-                                }
-                            }
+                            if let Err(err) = handle_money_input(
+                                rx.clone(),
+                                uid.clone(),
+                                drink.clone(),
+                                window.clone(),
+                            )
+                            .await
+                            {
+                                window
+                                    .upgrade_in_event_loop(move |window| {
+                                        window.set_error_message(err.to_string().into());
+                                    })
+                                    .unwrap();
+                            };
                         }
                     });
                 }
