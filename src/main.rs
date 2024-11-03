@@ -187,16 +187,15 @@ fn main() {
 
                 {
                     let uid = uid.clone();
-                    let rx = controller.rx.lock().await.clone().unwrap();
+                    let mut rx = controller.rx.lock().await.clone().unwrap();
                     tokio::spawn(async move {
                         // My heart yearns for async closures
                         async fn handle_money_input(
-                            mut rx: Receiver<Option<AdaControllerResponse>>,
+                            response: AdaControllerResponse,
                             uid: Arc<Mutex<Option<String>>>,
                             drink: Arc<DrinkApi>,
                             window: slint::Weak<ui::AppWindow>,
                         ) -> anyhow::Result<()> {
-                            rx.changed().await?;
                             window.upgrade_in_event_loop(move |window| window.set_loading(true))?;
                             let uid = uid
                                 .lock()
@@ -205,10 +204,7 @@ fn main() {
                                 .ok_or(anyhow!("User is not logged in"))?;
                             let uid = uid.as_str();
                             let user = drink.get_credits(uid).await?;
-                            let value = rx.borrow_and_update().clone().ok_or(anyhow!(
-                                "No valid value received from bill and coin accepter controller"
-                            ))?;
-                            let new_balance = user.drink_balance + value.to_credits() as i64;
+                            let new_balance = user.drink_balance + response.to_credits() as i64;
                             drink.set_credits(uid, new_balance).await?;
                             window.upgrade_in_event_loop(move |window| {
                                 window.set_loading(false);
@@ -217,13 +213,15 @@ fn main() {
                             Ok(())
                         }
                         loop {
-                            if let Err(err) = handle_money_input(
-                                rx.clone(),
-                                uid.clone(),
-                                drink.clone(),
-                                window.clone(),
-                            )
-                            .await
+                            if rx.changed().await.is_err() {
+                                break;
+                            }
+                            let Some(response) = rx.borrow_and_update().clone() else {
+                                break;
+                            };
+
+                            if let Err(err) =
+                                handle_money_input(response, uid.clone(), drink.clone(), window.clone()).await
                             {
                                 window
                                     .upgrade_in_event_loop(move |window| {
