@@ -197,6 +197,7 @@ fn main() {
                             window: slint::Weak<ui::AppWindow>,
                         ) -> anyhow::Result<()> {
                             rx.changed().await?;
+                            window.upgrade_in_event_loop(move |window| window.set_loading(true))?;
                             let uid = uid
                                 .lock()
                                 .await
@@ -210,7 +211,8 @@ fn main() {
                             let new_balance = user.drink_balance + value.to_credits() as i64;
                             drink.set_credits(uid, new_balance).await?;
                             window.upgrade_in_event_loop(move |window| {
-                                window.set_credits(new_balance as i32);
+                                window.set_loading(false);
+                                window.set_credits(new_balance as i32)
                             })?;
                             Ok(())
                         }

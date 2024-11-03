@@ -22,10 +22,11 @@ export component AppWindow inherits Window {
     in-out property <bool> logged_in: false;
     in-out property <string> uid: "";
     in-out property <string> name: "";
-    in property <string> error_message: "";
+    in-out property <string> error_message: "";
     in-out property <int> credits: -1;
     in-out property <image> profile_picture: @image-url("./scan-id.svg");
     in-out property <int> radius;
+    in-out property <bool> loading: false;
     private property <float> tick_2s: mod(animation-tick(), 2s) / 2s;
     private property <float> tick_5s: mod(animation-tick(), 5s) / 5s;
     private property <float> tick_20s: mod(animation-tick(), 20s) / 20s;
@@ -228,6 +229,32 @@ export component AppWindow inherits Window {
                     x: 5+4*sin(logout_time*360deg);
                     y: 5-4*cos(logout_time*360deg);
                 }
+            }
+        }
+    }
+    
+    if loading :
+    Rectangle {
+        background: rgba(0, 0, 0, 0.2);
+        Path {
+            width: root.width / 5;
+            height: root.width / 5;
+            stroke-width: 30px;
+            stroke: white;
+            viewbox-height: 2;
+            viewbox-width: 2;
+            MoveTo {
+                x: 1+sin(tick_5s*360deg);
+                y: 1+cos(tick_5s*360deg);
+            }
+            ArcTo {
+                radius-x: 1;
+                radius-y: 1;
+                x-rotation: 0;
+                large-arc: true;
+                sweep: true;
+                x: 1-sin(tick_5s*360deg);
+                y: 1-cos(tick_5s*360deg);
             }
         }
     }
