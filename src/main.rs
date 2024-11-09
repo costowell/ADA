@@ -14,7 +14,7 @@ use controller::{
 use drink::DrinkApi;
 use gatekeeper_members::{GateKeeperMemberListener, RealmType};
 use image::{io::Reader as ImageReader, GenericImageView};
-use log::{error, info};
+use log::{error, info, warn};
 use runtime::runtime;
 use slint::{ComponentHandle, Image, SharedPixelBuffer};
 use tokio::sync::{
@@ -67,7 +67,9 @@ fn is_in_rounded_box(x: u32, y: u32, width: u32, height: u32, r: f32) -> bool {
 }
 
 fn main() {
-    dotenvy::dotenv().unwrap();
+    if dotenvy::dotenv().is_err() {
+        warn!("Failed to load env file");
+    }
     env_logger::init();
 
     let command = Command::new("ADA")
