@@ -41,22 +41,11 @@ raspi-config nonint do_serial_hw 0
 # Disable UART console (1 means disable... why?)
 raspi-config nonint do_serial_cons 1
 
+# Setup autologin
+raspi-config nonint do_boot_behavior B2
+
 # Increase swap size because Rust takes lots of RAM to compile
 dphys-swapfile swapoff
 sed -i '/^CONF_SWAPSIZE=/s/=.*/=2024/' /etc/dphys-swapfile
 dphys-swapfile setup
 dphys-swapfile swapon
-
-# Setup cage systemd unit
-SERVICE="/etc/systemd/system/cage@.service"
-ESCAPED_EXEC=$(printf '%s\n' "/usr/bin/cage -s -- '$ROOT_DIR/target/release/ada' pn532_uart:/dev/ttyS0 /dev/ttyACM0" | sed -e 's/[]\/$*.^[]/\\&/g')
-
-# Install env file
-mkdir -p /etc/ada
-cp "$ROOT_DIR/.env" "/etc/ada/env"
-cp "$SCRIPT_DIR/cage@.service" "$SERVICE"
-cp "$SCRIPT_DIR/pam_cage" "/etc/pam.d/cage"
-sed -i "/^User=/s/=.*/=$(logname)/" "$SERVICE"
-sed -i "/^WorkingDirectory=/s/=.*/=\/home\/$(logname)/" "$SERVICE"
-sed -i "/^ExecStart=/s/=.*/=$ESCAPED_EXEC/" "$SERVICE"
-systemctl enable cage@tty1.service
