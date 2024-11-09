@@ -42,7 +42,7 @@ raspi-config nonint do_serial_hw 0
 raspi-config nonint do_serial_cons 1
 
 # Setup autologin
-raspi-config nonint do_boot_behavior B2
+raspi-config nonint do_boot_behaviour B2
 
 # Increase swap size because Rust takes lots of RAM to compile
 dphys-swapfile swapoff
